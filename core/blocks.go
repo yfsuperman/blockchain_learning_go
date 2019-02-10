@@ -1,6 +1,9 @@
 package core
 
 import (
+	"bytes"
+	"encoding/gob"
+	"log"
 	"time"
 )
 
@@ -23,4 +26,30 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 	block.Counter = counter
 
 	return block
+}
+
+// Serialize converts Block into byte array
+func (b *Block) Serialize() []byte {
+	var res bytes.Buffer
+	encoder := gob.NewEncoder(&res)
+
+	err := encoder.Encode(b)
+	if err != nil {
+		log.Printf("Error found when serializing block: %s\n", err)
+	}
+
+	return res.Bytes()
+}
+
+// Deserialize converts byte array back to Block
+func Deserialize(data []byte) *Block {
+	var block Block
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+
+	err := decoder.Decode(&block)
+	if err != nil {
+		log.Printf("Error found when deserializing block: %s\n", err)
+	}
+
+	return &block
 }
