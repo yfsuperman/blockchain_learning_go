@@ -5,20 +5,19 @@ type Blockchain struct {
 	Blocks []*Block
 }
 
-func (bc *Blockchain) GetBlocks() []*Block {
-	return bc.Blocks
-}
-
+// AddBlock add a new block to a blockchain
 func (bc *Blockchain) AddBlock(data string) {
 	prevBlock := bc.Blocks[len(bc.Blocks) - 1]
 	newBlock := NewBlock(data, prevBlock.Hash)
 	bc.Blocks = append(bc.Blocks, newBlock)
 }
 
+// NewGenesisBlock creates the first block for a blockchain
 func NewGenesisBlock() *Block {
 	return NewBlock("Genesis Block", []byte{})
 }
 
+// NewBlockchain creates a new blockchain
 func NewBlockchain() *Blockchain {
 	return &Blockchain{[]*Block{NewGenesisBlock()}}
 }
