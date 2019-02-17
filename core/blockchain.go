@@ -14,13 +14,26 @@ const (
 // Blockchain defines the structure of a block-chain
 type Blockchain struct {
 	tip []byte     // tip of block hash stored in DB
-	db  *bolt.DB   // DB connection
+	Db  *bolt.DB   // DB connection
+}
+
+// BlockchainIterator iterates over blocks in a blockchain
+type BlockchainIterator struct {
+	currentHash []byte     // The hash of current block
+	Db          *bolt.DB   // DB connection
+}
+
+// Iterator creates BlockchainIterator based on a Blockchain
+func (bc *Blockchain) Iterator() *BlockchainIterator {
+	bci := &BlockchainIterator{bc.tip, bc.Db}
+
+	return bci
 }
 
 // AddBlock add a new block to a blockchain
 func (bc *Blockchain) AddBlock(data string) {
 	var prevHash []byte
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		prevHash = b.Get([]byte("l"))
 
@@ -32,7 +45,7 @@ func (bc *Blockchain) AddBlock(data string) {
 
 	newBlock := NewBlock(data, prevHash)
 
-	err = bc.db.Update(func(tx *bolt.Tx) error {
+	err = bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		err := b.Put(newBlock.Hash, newBlock.Serialize())
 		err = b.Put([]byte("l"), newBlock.Hash)
@@ -46,6 +59,26 @@ func (bc *Blockchain) AddBlock(data string) {
 	if err != nil {
 		log.Panic(err)
 	}
+}
+
+func (bci *BlockchainIterator) Next() *Block {
+	var block *Block
+
+	err := bci.Db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBucket))
+		encodedBlock := b.Get(bci.currentHash)
+		block = Deserialize(encodedBlock)
+
+		return nil
+	})
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bci.currentHash = block.PrevBlockHash
+
+	return block
 }
 
 // NewGenesisBlock creates the first block for a blockchain
